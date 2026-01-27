@@ -5,7 +5,7 @@ import { cn } from "~/lib/utils";
 
 const NavItems = ({ handleClick }: { handleClick?: () => void }) => {
   const user = {
-    name: "Abiral",
+    name: "David",
     email: "contact@abiral.com",
     imageUrl: "/assets/images/david.webp",
   };
@@ -13,7 +13,7 @@ const NavItems = ({ handleClick }: { handleClick?: () => void }) => {
   return (
     <section className="nav-items">
       <Link to="/" className="link-logo">
-        <img src="/assets/icons/logo.svg" alt="logo" className="size-30px" />
+        <img src="/assets/icons/logo.svg" alt="logo" className="size-[30px]" />
         <h1>Tourvisto</h1>
       </Link>
       <div className="container">
