@@ -21,9 +21,8 @@ export const storeUserData = async () => {
     const user = await account.get();
     if (!user) throw new Error("User not found");
 
-    const { providerAccessToken } = (await account.getSession("current")) || {};
-    const profilePicture =
-      providerAccessToken ? await getGooglePicture(providerAccessToken) : null;
+    const existingUser = await getExistingUser(user.$id);
+    if (existingUser) return existingUser;
 
     const createdUser = await database.createDocument(
       appwriteConfig.databaseId,
@@ -33,12 +32,12 @@ export const storeUserData = async () => {
         accountId: user.$id,
         email: user.email,
         name: user.name,
-        imageUrl: profilePicture,
+        imageUrl: user.prefs?.avatar || null, // safer
         joinedAt: new Date().toISOString(),
       },
     );
 
-    if (!createdUser.$id) redirect("/sign-in");
+    return createdUser;
   } catch (error) {
     console.error("Error storing user data:", error);
   }
