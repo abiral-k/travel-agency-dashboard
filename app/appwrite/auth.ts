@@ -21,8 +21,9 @@ export const storeUserData = async () => {
     const user = await account.get();
     if (!user) throw new Error("User not found");
 
-    const existingUser = await getExistingUser(user.$id);
-    if (existingUser) return existingUser;
+    const { providerAccessToken } = (await account.getSession("current")) || {};
+    const profilePicture =
+      providerAccessToken ? await getGooglePicture(providerAccessToken) : null;
 
     const createdUser = await database.createDocument(
       appwriteConfig.databaseId,
@@ -32,12 +33,12 @@ export const storeUserData = async () => {
         accountId: user.$id,
         email: user.email,
         name: user.name,
-        imageUrl: user.prefs?.avatar || null, // safer
+        imageUrl: profilePicture,
         joinedAt: new Date().toISOString(),
       },
     );
 
-    return createdUser;
+    if (!createdUser.$id) redirect("/sign-in");
   } catch (error) {
     console.error("Error storing user data:", error);
   }
@@ -45,16 +46,26 @@ export const storeUserData = async () => {
 
 const getGooglePicture = async (accessToken: string) => {
   try {
+    console.log(
+      "🔍 Starting getGooglePicture with token:",
+      accessToken.substring(0, 20) + "...",
+    ); // 👈 Log token
+
     const response = await fetch(
-      "https://people.googleapis.com/v1/people/me?personFields=photos",
+      "https://www.googleapis.com/oauth2/v2/userinfo",
       { headers: { Authorization: `Bearer ${accessToken}` } },
     );
-    if (!response.ok) throw new Error("Failed to fetch Google profile picture");
 
-    const { photos } = await response.json();
-    return photos?.[0]?.url || null;
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to fetch: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    return data.picture || null;
   } catch (error) {
-    console.error("Error fetching Google picture:", error);
+    console.error("❌ Error in getGooglePicture:", error);
     return null;
   }
 };
