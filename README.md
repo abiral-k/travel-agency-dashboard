@@ -2,7 +2,6 @@
 
 A modern, full-stack dashboard application for managing travel agency operations. Built with React Router v7, TypeScript, and TailwindCSS for a responsive, production-ready experience.
 
-**Live Demo:** [https://yatrika-eight.vercel.app](https://yatrika-eight.vercel.app)
 
 ## Features
 
