@@ -110,4 +110,4 @@ For issues and questions, please open an issue on the [GitHub repository](https:
 
 ---
 
-Built with ❤️ by [Abiral K](https://github.com/abiral-k)
+Built with ❤️ by [Abiral](https://github.com/abiral-k)
