@@ -1,11 +1,12 @@
 import { calculateTrendPercentage, cn } from "~/lib/utils";
+import type { StatsCardProps } from "~/types";
 
 const StatsCard = ({
   headerTitle,
   total,
   lastMonthCount,
   currentMonthCount,
-}: StatsCard) => {
+}: StatsCardProps) => {
   const { trend, percentage } = calculateTrendPercentage(
     currentMonthCount,
     lastMonthCount

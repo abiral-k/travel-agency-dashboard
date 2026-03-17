@@ -5,6 +5,7 @@ import {
   ChipsDirective,
 } from "@syncfusion/ej2-react-buttons";
 import { cn, getFirstWord } from "~/lib/utils";
+import type { TripCardProps } from "~/types";
 
 const TripCard = ({
   id,

@@ -13,27 +13,18 @@ import { world_map } from "~/constants/world_map";
 import { ButtonComponent } from "@syncfusion/ej2-react-buttons";
 import { account } from "~/appwrite/client";
 import { useNavigate } from "react-router";
+import type { Country, CreateTripResponse, TripFormData } from "~/types";
 
-export const loader = async () => {
-  const response = await fetch(
-    "https://restcountries.com/v3.1/all?fields=flag,name,latlng,maps",
-  );
-  const data = await response.json();
+const COUNTRIES_CACHE_KEY = "countries:v1";
+const COUNTRIES_CACHE_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
 
-  return data.map((country: any) => ({
-    name: country.name.common,
-    coordinates: country.latlng,
-    value: country.name.common,
-    openStreetMap: country.maps?.openStreetMap,
-  }));
-};
-
-const CreateTrip = ({ loaderData }: Route.ComponentProps) => {
-  const countries = loaderData as Country[];
+const CreateTrip = ({}: Route.ComponentProps) => {
   const navigate = useNavigate();
+  const [countries, setCountries] = useState<Country[]>([]);
+  const [countriesLoading, setCountriesLoading] = useState(true);
 
   const [formData, setFormData] = useState<TripFormData>({
-    country: countries[0]?.name || "",
+    country: "",
     travelStyle: "",
     interest: "",
     budget: "",
@@ -42,6 +33,73 @@ const CreateTrip = ({ loaderData }: Route.ComponentProps) => {
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    const readCache = () => {
+      try {
+        const raw = sessionStorage.getItem(COUNTRIES_CACHE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw) as { ts: number; data: Country[] };
+        if (!parsed?.ts || !Array.isArray(parsed.data)) return null;
+        if (Date.now() - parsed.ts > COUNTRIES_CACHE_TTL_MS) return null;
+        return parsed.data;
+      } catch {
+        return null;
+      }
+    };
+
+    const writeCache = (data: Country[]) => {
+      try {
+        sessionStorage.setItem(
+          COUNTRIES_CACHE_KEY,
+          JSON.stringify({ ts: Date.now(), data }),
+        );
+      } catch {
+        // ignore
+      }
+    };
+
+    (async () => {
+      setCountriesLoading(true);
+      const cached = readCache();
+      if (cached?.length) {
+        if (!cancelled) {
+          setCountries(cached);
+          setFormData((prev) => ({ ...prev, country: prev.country || cached[0]?.name || "" }));
+          setCountriesLoading(false);
+        }
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          "https://restcountries.com/v3.1/all?fields=flag,name,latlng,maps",
+        );
+        const data = await response.json();
+        const mapped: Country[] = data.map((country: any) => ({
+          name: country.name.common,
+          coordinates: country.latlng,
+          value: country.name.common,
+          openStreetMap: country.maps?.openStreetMap,
+        }));
+
+        writeCache(mapped);
+        if (cancelled) return;
+        setCountries(mapped);
+        setFormData((prev) => ({ ...prev, country: prev.country || mapped[0]?.name || "" }));
+      } catch (e) {
+        console.error("Failed to load countries", e);
+      } finally {
+        if (!cancelled) setCountriesLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -123,7 +181,38 @@ const CreateTrip = ({ loaderData }: Route.ComponentProps) => {
       />
 
       <section className="mt-2.5 wrapper-md">
-        <form className="trip-form" onSubmit={handleSubmit}>
+        {countriesLoading ?
+          <div className="trip-form animate-pulse">
+            <div>
+              <div className="h-4 w-24 rounded bg-light-300" />
+              <div className="h-11 w-full rounded-xl bg-light-300" />
+            </div>
+            <div>
+              <div className="h-4 w-24 rounded bg-light-300" />
+              <div className="h-11 w-full rounded-xl bg-light-300" />
+            </div>
+            <div>
+              <div className="h-4 w-32 rounded bg-light-300" />
+              <div className="h-11 w-full rounded-xl bg-light-300" />
+            </div>
+            <div>
+              <div className="h-4 w-32 rounded bg-light-300" />
+              <div className="h-11 w-full rounded-xl bg-light-300" />
+            </div>
+            <div>
+              <div className="h-4 w-32 rounded bg-light-300" />
+              <div className="h-11 w-full rounded-xl bg-light-300" />
+            </div>
+            <div>
+              <div className="h-4 w-32 rounded bg-light-300" />
+              <div className="h-11 w-full rounded-xl bg-light-300" />
+            </div>
+            <div>
+              <div className="h-4 w-48 rounded bg-light-300" />
+              <div className="h-[260px] w-full rounded-xl bg-light-300" />
+            </div>
+          </div>
+        : <form className="trip-form" onSubmit={handleSubmit}>
           <div>
             <label htmlFor="country">Country</label>
             <ComboBoxComponent
@@ -227,7 +316,7 @@ const CreateTrip = ({ loaderData }: Route.ComponentProps) => {
           <footer className="px-6 w-full">
             <ButtonComponent
               type="submit"
-              className="button-class !h-12 !w-full"
+              className="button-class h-12! w-full!"
               disabled={loading}
             >
               <img
@@ -239,7 +328,7 @@ const CreateTrip = ({ loaderData }: Route.ComponentProps) => {
               </span>
             </ButtonComponent>
           </footer>
-        </form>
+        </form>}
       </section>
     </main>
   );

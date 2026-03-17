@@ -2,22 +2,22 @@ import { Outlet, redirect } from "react-router";
 import { SidebarComponent } from "@syncfusion/ej2-react-navigations";
 import { MobileSidebar, NavItems } from "~/components";
 import { account } from "~/appwrite/client";
-import { getExistingUser, storeUserData } from "~/appwrite/auth";
+import { syncUserData } from "~/appwrite/auth";
+import type { ShouldRevalidateFunction } from "react-router";
 
 export async function clientLoader() {
   try {
     const user = await account.get();
 
     if (!user.$id) return redirect("/sign-in");
-
-    const existingUser = await getExistingUser(user.$id);
-
-    return existingUser?.$id ? existingUser : await storeUserData();
+    return await syncUserData(user);
   } catch (e) {
     console.log("Error in clientLoader", e);
     return redirect("/sign-in");
   }
 }
+
+export const shouldRevalidate: ShouldRevalidateFunction = () => false;
 
 const AdminLayout = () => {
   return (

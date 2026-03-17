@@ -7,15 +7,70 @@ import {
 import { cn, formatDate } from "~/lib/utils";
 import { getAllUsers } from "~/appwrite/auth";
 import type { Route } from "./+types/all-users";
+import type { ShouldRevalidateFunction } from "react-router";
+import type { UserData } from "~/types";
+import React, { useEffect, useState } from "react";
 
-export const loader = async () => {
-  const { users, total } = await getAllUsers(10, 0);
+export const shouldRevalidate: ShouldRevalidateFunction = () => false;
 
-  return { users, total };
-};
+const AllUsers = ({}: Route.ComponentProps) => {
+  const UsersTableSkeleton = () => (
+    <section className="rounded-xl border border-light-200 bg-white shadow-100 overflow-hidden animate-pulse">
+      <div className="px-6 py-4 border-b border-light-200 flex items-center justify-between">
+        <div className="h-5 w-40 rounded bg-light-300" />
+        <div className="h-9 w-28 rounded-lg bg-light-300" />
+      </div>
 
-const AllUsers = ({ loaderData }: Route.ComponentProps) => {
-  const { users } = loaderData;
+      <div className="px-6 py-4 space-y-4">
+        {/* header row */}
+        <div className="grid grid-cols-12 gap-4">
+          <div className="col-span-4 h-4 rounded bg-light-300" />
+          <div className="col-span-4 h-4 rounded bg-light-300" />
+          <div className="col-span-2 h-4 rounded bg-light-300" />
+          <div className="col-span-2 h-4 rounded bg-light-300" />
+        </div>
+
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div
+            key={i}
+            className="grid grid-cols-12 gap-4 items-center py-3 border-b border-light-200 last:border-b-0"
+          >
+            <div className="col-span-4 flex items-center gap-3">
+              <div className="size-8 rounded-full bg-light-300" />
+              <div className="h-4 w-40 rounded bg-light-300" />
+            </div>
+            <div className="col-span-4 h-4 w-56 rounded bg-light-300" />
+            <div className="col-span-2 h-4 w-24 rounded bg-light-300" />
+            <div className="col-span-2">
+              <div className="h-6 w-20 rounded-2xl bg-light-300" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+
+  const [users, setUsers] = useState<UserData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        setIsLoading(true);
+        const { users } = await getAllUsers(10, 0);
+        if (cancelled) return;
+        setUsers(users as unknown as UserData[]);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <main className="all-users wrapper">
@@ -24,7 +79,9 @@ const AllUsers = ({ loaderData }: Route.ComponentProps) => {
         description="Filter, sort, and access detailed user profiles"
       />
 
-      <GridComponent dataSource={users} gridLines="None">
+      {isLoading ?
+        <UsersTableSkeleton />
+      : <GridComponent dataSource={users} gridLines="None">
         <ColumnsDirective>
           <ColumnDirective
             field="name"
@@ -88,7 +145,7 @@ const AllUsers = ({ loaderData }: Route.ComponentProps) => {
             )}
           />
         </ColumnsDirective>
-      </GridComponent>
+      </GridComponent>}
     </main>
   );
 };

@@ -1,3 +1,5 @@
+import type { InfoPillProps } from "~/types";
+
 const InfoPill = ({ text, image }: InfoPillProps) => {
   return (
     <figure className="info-pill">

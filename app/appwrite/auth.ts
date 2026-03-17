@@ -7,7 +7,7 @@ export const getExistingUser = async (id: string) => {
     const { documents, total } = await database.listDocuments(
       appwriteConfig.databaseId,
       appwriteConfig.userCollectionId,
-      [Query.equal("accountId", id)],
+      [Query.equal("accountId", id), Query.orderDesc("$createdAt"), Query.limit(1)],
     );
     return total > 0 ? documents[0] : null;
   } catch (error) {
@@ -47,6 +47,44 @@ export const storeUserData = async () => {
   }
 };
 
+export const syncUserData = async (
+  accountUser?: { $id: string; email?: string; name?: string } | null,
+) => {
+  try {
+    const user = accountUser ?? (await account.get());
+    if (!user) throw redirect("/sign-in");
+
+    const existingUser = await getExistingUser(user.$id);
+    if (!existingUser?.$id) return await storeUserData();
+
+    const update: Record<string, unknown> = {};
+
+    if (user.email && existingUser.email !== user.email) update.email = user.email;
+    if (user.name && existingUser.name !== user.name) update.name = user.name;
+
+    // Only fetch/update image when missing to avoid extra network calls.
+    if (!existingUser.imageUrl) {
+      const { providerAccessToken } =
+        (await account.getSession("current")) || {};
+      const profilePicture =
+        providerAccessToken ? await getGooglePicture(providerAccessToken) : null;
+      if (profilePicture) update.imageUrl = profilePicture;
+    }
+
+    if (Object.keys(update).length === 0) return existingUser;
+
+    return await database.updateDocument(
+      appwriteConfig.databaseId,
+      appwriteConfig.userCollectionId,
+      existingUser.$id,
+      update,
+    );
+  } catch (error) {
+    console.error("Error syncing user data:", error);
+    throw redirect("/sign-in");
+  }
+};
+
 const getGooglePicture = async (accessToken: string) => {
   try {
     console.log(
@@ -75,9 +113,17 @@ const getGooglePicture = async (accessToken: string) => {
 
 export const loginWithGoogle = async () => {
   try {
+    // Prevent “wrong account” by clearing any existing session first.
+    // If there's no session, this will just no-op.
+    try {
+      await account.deleteSession("current");
+    } catch {
+      // ignore
+    }
+
     await account.createOAuth2Session(
       OAuthProvider.Google,
-      `${window.location.origin}/dashboard`,
+      `${window.location.origin}/oauth/callback`,
       `${window.location.origin}/sign-in?error=oauth_failed`,
     );
   } catch (error) {
@@ -95,27 +141,9 @@ export const logoutUser = async () => {
 
 export const getUser = async () => {
   try {
-    const user = await account.get();
-    if (!user) throw redirect("/sign-in");
-
-    const { documents } = await database.listDocuments(
-      appwriteConfig.databaseId,
-      appwriteConfig.userCollectionId,
-      [
-        Query.equal("accountId", user.$id),
-        Query.select([
-          "name",
-          "email",
-          "imageUrl",
-          "joinedAt",
-          "accountId",
-          "status",
-        ]),
-      ],
-    );
-
-    if (documents.length === 0) throw redirect("/sign-in");
-    return documents[0];
+    const synced = await syncUserData();
+    if (!synced) throw redirect("/sign-in");
+    return synced;
   } catch (error) {
     console.error("Error fetching user:", error);
     throw redirect("/sign-in");

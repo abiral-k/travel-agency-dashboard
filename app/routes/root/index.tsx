@@ -3,11 +3,22 @@ import { account } from "~/appwrite/client";
 
 export async function clientLoader() {
   try {
-    // Check if user is authenticated
-    const user = await account.get();
-    if (user.$id) {
-      // User is logged in, go to dashboard
-      return redirect("/dashboard");
+    if (typeof window !== "undefined" && window.location.hash === "#") {
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+    // Some browsers may not have the Appwrite session available immediately
+    // after OAuth redirects back to the app. Retry briefly before redirecting.
+    for (let attempt = 0; attempt < 5; attempt++) {
+      try {
+        const user = await account.get();
+        if (user.$id) return redirect("/dashboard");
+      } catch {
+        // ignore and retry
+      }
+      await sleep(250);
     }
   } catch (error) {
     // User is not authenticated

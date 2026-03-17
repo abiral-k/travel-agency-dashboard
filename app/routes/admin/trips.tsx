@@ -1,40 +1,60 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Header, TripCard } from "~/components";
 import type { Route } from "./+types/trips";
-import { useSearchParams, type LoaderFunctionArgs } from "react-router";
-import { getAllTrips, getTripById } from "~/appwrite/trips";
+import { useSearchParams } from "react-router";
+import { getAllTrips } from "~/appwrite/trips";
 import { parseTripData } from "~/lib/utils";
 import { PagerComponent } from "@syncfusion/ej2-react-grids";
+import type { ShouldRevalidateFunction } from "react-router";
+import type { Trip } from "~/types";
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
+export const shouldRevalidate: ShouldRevalidateFunction = () => false;
+
+const Trips = ({}: Route.ComponentProps) => {
   const limit = 8;
-  const url = new URL(request.url);
-  const page = parseInt(url.searchParams.get("page") || "1", 10);
-  const offset = (page - 1) * limit;
+  const [searchParams, setSearchParams] = useSearchParams();
+  const currentPage = Number(searchParams.get("page") || "1");
+  const offset = useMemo(() => (currentPage - 1) * limit, [currentPage]);
 
-  const { allTrips, total } = await getAllTrips(limit, offset);
+  const [trips, setTrips] = useState<Trip[]>([]);
+  const [total, setTotal] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
-  return {
-    trips: allTrips.map(({ $id, tripDetail, imageUrls }) => ({
-      id: $id,
-      ...parseTripData(tripDetail),
-      imageUrls: imageUrls ?? [],
-    })),
-    total,
-  };
-};
+  useEffect(() => {
+    let cancelled = false;
 
-const Trips = ({ loaderData }: Route.ComponentProps) => {
-  const trips = loaderData.trips as Trip[] | [];
+    (async () => {
+      try {
+        setIsLoading(true);
+        const { allTrips, total } = await getAllTrips(limit, offset);
+        if (cancelled) return;
+        setTrips(
+          allTrips.map((doc) => {
+            const d = doc as unknown as {
+              $id: string;
+              tripDetail: string;
+              imageUrls?: string[];
+            };
+            return {
+              id: d.$id,
+              ...parseTripData(d.tripDetail),
+              imageUrls: d.imageUrls ?? [],
+            } as Trip;
+          }),
+        );
+        setTotal(total);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    })();
 
-  const [searchParams] = useSearchParams();
-  const initialPage = Number(searchParams.get("page") || "1");
-
-  const [currentPage, setCurrentPage] = useState(initialPage);
+    return () => {
+      cancelled = true;
+    };
+  }, [limit, offset]);
 
   const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    window.location.search = `?page=${page}`;
+    setSearchParams({ page: String(page) });
   };
 
   return (
@@ -50,21 +70,29 @@ const Trips = ({ loaderData }: Route.ComponentProps) => {
           Manage Created Trips
         </h1>
         <div className="trip-grid mb-4">
-          {trips.map((trip) => (
-            <TripCard
-              key={trip.id}
-              id={trip.id.toString()}
-              name={trip.name!}
-              imageUrls={trip.imageUrls[0]}
-              location={trip.itinerary?.[0]?.location ?? ""}
-              tags={[trip.interests!, trip.travelStyle!]}
-              price={trip.estimatedPrice!}
-            />
-          ))}
+          {isLoading ?
+            Array.from({ length: limit }).map((_, i) => (
+              <div
+                key={i}
+                className="rounded-xl border border-light-200 bg-white h-[260px] animate-pulse"
+              />
+            ))
+          : trips.map((trip) => (
+              <TripCard
+                key={trip.id}
+                id={trip.id.toString()}
+                name={trip.name!}
+                imageUrls={trip.imageUrls[0]}
+                location={trip.itinerary?.[0]?.location ?? ""}
+                tags={[trip.interests!, trip.travelStyle!]}
+                price={trip.estimatedPrice!}
+              />
+            ))
+          }
         </div>
         <PagerComponent
-          totalRecordsCount={loaderData.total}
-          pageSize={8}
+          totalRecordsCount={total}
+          pageSize={limit}
           currentPage={currentPage}
           click={(args) => handlePageChange(args.currentPage)}
           cssClass="!mb-4"

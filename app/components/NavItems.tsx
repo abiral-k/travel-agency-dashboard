@@ -22,7 +22,7 @@ const NavItems = ({ handleClick }: { handleClick?: () => void }) => {
       <div className="container">
         <nav>
           {sidebarItems.map(({ id, icon, href, label }) => (
-            <NavLink to={href} key={id}>
+            <NavLink to={href} key={id} prefetch="intent">
               {({ isActive }: { isActive: boolean }) => (
                 <div
                   className={cn("group nav-item", {
@@ -32,11 +32,15 @@ const NavItems = ({ handleClick }: { handleClick?: () => void }) => {
                 >
                   <img
                     src={icon}
-                    alt={label}
-                    className={`group-hover:brightness-0 size-0 group-hover:invert 
-                      ${isActive ? "brightness-0 invert" : "text-dark-200"}`}
+                    alt=""
+                    aria-hidden="true"
+                    className={cn(
+                      "size-5 shrink-0 transition",
+                      "group-hover:brightness-0 group-hover:invert",
+                      isActive ? "brightness-0 invert" : "opacity-80",
+                    )}
                   />
-                  {label}
+                  <span className="truncate">{label}</span>
                 </div>
               )}
             </NavLink>

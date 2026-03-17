@@ -1,5 +1,7 @@
 import { parseTripData } from "~/lib/utils";
 import { database, appwriteConfig } from "./client";
+import { Query } from "appwrite";
+import type { DashboardStats } from "~/types";
 
 interface Document {
   [key: string]: any;
@@ -26,10 +28,12 @@ export const getUsersAndTripsStats = async (): Promise<DashboardStats> => {
     database.listDocuments(
       appwriteConfig.databaseId,
       appwriteConfig.userCollectionId,
+      [Query.select(["joinedAt", "status"])],
     ),
     database.listDocuments(
       appwriteConfig.databaseId,
       appwriteConfig.tripCollectionId,
+      [Query.select(["createdAt"])],
     ),
   ]);
 
@@ -84,6 +88,7 @@ export const getUserGrowthPerDay = async () => {
   const users = await database.listDocuments(
     appwriteConfig.databaseId,
     appwriteConfig.userCollectionId,
+    [Query.select(["joinedAt"])],
   );
 
   const userGrowth = users.documents.reduce(
@@ -109,6 +114,7 @@ export const getTripsCreatedPerDay = async () => {
   const trips = await database.listDocuments(
     appwriteConfig.databaseId,
     appwriteConfig.tripCollectionId,
+    [Query.select(["createdAt"])],
   );
 
   const tripsGrowth = trips.documents.reduce(
@@ -134,6 +140,7 @@ export const getTripsByTravelStyle = async () => {
   const trips = await database.listDocuments(
     appwriteConfig.databaseId,
     appwriteConfig.tripCollectionId,
+    [Query.select(["tripDetail"])],
   );
 
   const travelStyleCounts = trips.documents.reduce(
