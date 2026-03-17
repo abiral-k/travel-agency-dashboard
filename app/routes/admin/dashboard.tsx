@@ -25,7 +25,6 @@ import {
   Inject,
 } from "@syncfusion/ej2-react-grids";
 import { tripXAxis, tripyAxis, userXAxis, useryAxis } from "~/constants";
-import { redirect } from "react-router";
 
 export const clientLoader = async () => {
   const [
@@ -67,14 +66,30 @@ export const clientLoader = async () => {
 };
 
 const Dashboard = ({ loaderData }: Route.ComponentProps) => {
-  const user = loaderData.user as User | null;
+  const userDoc = loaderData.user as unknown as {
+    $id?: string;
+    name?: string;
+    email?: string;
+    imageUrl?: string | null;
+    joinedAt?: string;
+  } | null;
+
+  const user: User | null = userDoc
+    ? {
+        id: userDoc.$id ?? "",
+        name: userDoc.name ?? "",
+        email: userDoc.email ?? "",
+        imageUrl: userDoc.imageUrl ?? "",
+        dateJoined: userDoc.joinedAt ?? "",
+      }
+    : null;
   const { dashboardStats, allTrips, userGrowth, tripsByTravelStyle, allUsers } =
     loaderData;
 
-  const trips = allTrips.map((trip) => ({
-    imageUrl: trip.imageUrls[0],
-    name: trip.name,
-    interest: trip.interests,
+  const tripsMapped: TripsInterest[] = allTrips.map((trip) => ({
+    imageUrl: trip.imageUrls[0] ?? "",
+    name: trip.name ?? "",
+    interest: trip.interests ?? "",
   }));
 
   const usersAndTrips = [
@@ -86,7 +101,7 @@ const Dashboard = ({ loaderData }: Route.ComponentProps) => {
     },
     {
       title: "Trips based on interests",
-      dataSource: trips,
+      dataSource: tripsMapped,
       field: "interest",
       headerText: "Interests",
     },

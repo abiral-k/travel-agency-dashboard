@@ -34,13 +34,16 @@ export const storeUserData = async () => {
         email: user.email,
         name: user.name,
         imageUrl: profilePicture,
+        status: "user",
         joinedAt: new Date().toISOString(),
       },
     );
 
-    if (!createdUser.$id) redirect("/sign-in");
+    if (!createdUser.$id) return redirect("/sign-in");
+    return createdUser;
   } catch (error) {
     console.error("Error storing user data:", error);
+    return redirect("/sign-in");
   }
 };
 
@@ -72,10 +75,10 @@ const getGooglePicture = async (accessToken: string) => {
 
 export const loginWithGoogle = async () => {
   try {
-    account.createOAuth2Session(
+    await account.createOAuth2Session(
       OAuthProvider.Google,
-      `${window.location.origin}/`,
-      `${window.location.origin}/404`,
+      `${window.location.origin}/dashboard`,
+      `${window.location.origin}/sign-in?error=oauth_failed`,
     );
   } catch (error) {
     console.error("Error during OAuth2 session creation:", error);
@@ -93,21 +96,29 @@ export const logoutUser = async () => {
 export const getUser = async () => {
   try {
     const user = await account.get();
-    if (!user) return redirect("/sign-in");
+    if (!user) throw redirect("/sign-in");
 
     const { documents } = await database.listDocuments(
       appwriteConfig.databaseId,
       appwriteConfig.userCollectionId,
       [
         Query.equal("accountId", user.$id),
-        Query.select(["name", "email", "imageUrl", "joinedAt", "accountId"]),
+        Query.select([
+          "name",
+          "email",
+          "imageUrl",
+          "joinedAt",
+          "accountId",
+          "status",
+        ]),
       ],
     );
 
-    return documents.length > 0 ? documents[0] : redirect("/sign-in");
+    if (documents.length === 0) throw redirect("/sign-in");
+    return documents[0];
   } catch (error) {
     console.error("Error fetching user:", error);
-    return null;
+    throw redirect("/sign-in");
   }
 };
 

@@ -75,12 +75,7 @@ export const getUsersAndTripsStats = async (): Promise<DashboardStats> => {
         startCurrent,
         undefined,
       ),
-      lastMonth: filterByDate(
-        filterUsersByRole("user"),
-        "joinedAt",
-        startPrev,
-        endPrev,
-      ),
+      lastMonth: filterByDate(trips.documents, "createdAt", startPrev, endPrev),
     },
   };
 };

@@ -2,12 +2,11 @@ import { Link, redirect } from "react-router";
 import { ButtonComponent } from "@syncfusion/ej2-react-buttons";
 import { loginWithGoogle } from "~/appwrite/auth";
 import { account } from "~/appwrite/client";
-import { useEffect } from "react";
 
 export async function clientLoader() {
   try {
     const user = await account.get();
-    if (user.$id) return redirect("/");
+    if (user.$id) return redirect("/dashboard");
   } catch (e) {
     console.log("Error fetching user", e);
   }
@@ -34,7 +33,7 @@ const SignIn = () => {
               Start Your Travel Journey
             </h2>
 
-            <p className="p-18-regular text-center text-gray-100 !leading-7">
+            <p className="p-18-regular text-center text-gray-100 leading-7!">
               Sign in with Google to manage destinations, itineraries, and user
               activity with ease.
             </p>
@@ -43,7 +42,7 @@ const SignIn = () => {
           <ButtonComponent
             type="button"
             iconCss="e-search-icon"
-            className="button-class !h-11 !w-full"
+            className="button-class h-11! w-full!"
             onClick={loginWithGoogle}
           >
             <img

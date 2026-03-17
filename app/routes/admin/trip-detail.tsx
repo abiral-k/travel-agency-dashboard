@@ -152,26 +152,43 @@ const TripDetail = ({ loaderData }: Route.ComponentProps) => {
           {description}
         </p>
 
-        <ul className="itinerary">
-          {itinerary?.map((dayPlan: DayPlan, index: number) => (
-            <li key={index}>
-              <h3>
-                Day {dayPlan.day}: {dayPlan.location}
-              </h3>
+        <section className="mt-6 md:mt-8">
+          <div className="flex items-center justify-between gap-4">
+            <h2 className="p-24-semibold text-dark-100">Itinerary</h2>
+            <p className="text-sm text-dark-300">
+              {itinerary?.length ?? 0} days
+            </p>
+          </div>
 
-              <ul>
-                {dayPlan.activities.map((activity, index: number) => (
-                  <li key={index}>
-                    <span className="flex-shring-0 p-18-semibold">
-                      {activity.time}
-                    </span>
-                    <p className="flex-grow">{activity.description}</p>
-                  </li>
-                ))}
-              </ul>
-            </li>
-          ))}
-        </ul>
+          <ul className="mt-4 space-y-4 md:space-y-5">
+            {itinerary?.map((dayPlan: DayPlan, index: number) => (
+              <li
+                key={index}
+                className="rounded-xl border border-light-200 bg-white p-4 md:p-5"
+              >
+                <h3 className="text-base md:text-lg font-semibold text-dark-100">
+                  Day {dayPlan.day}: {dayPlan.location}
+                </h3>
+
+                <ul className="mt-4 space-y-3">
+                  {dayPlan.activities.map((activity, index: number) => (
+                    <li
+                      key={index}
+                      className="flex flex-col gap-1.5 sm:flex-row sm:gap-4"
+                    >
+                      <span className="shrink-0 w-full sm:w-28 text-dark-100 font-semibold">
+                        {activity.time}
+                      </span>
+                      <p className="grow text-dark-400 leading-relaxed">
+                        {activity.description}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ul>
+        </section>
         {visitTimeAndWeatherInfo.map((section) => (
           <section key={section.title} className="visit">
             <div>
@@ -180,7 +197,7 @@ const TripDetail = ({ loaderData }: Route.ComponentProps) => {
               <ul>
                 {section.items?.map((item) => (
                   <li key={item}>
-                    <p className="flex-grow">{item}</p>
+                    <p className="grow">{item}</p>
                   </li>
                 ))}
               </ul>
