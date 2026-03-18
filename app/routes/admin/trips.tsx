@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Header, TripCard } from "~/components";
+import { TripCardSkeleton } from "~/components/ui/skeletons";
 import type { Route } from "./+types/trips";
 import { useSearchParams } from "react-router";
 import { getAllTrips } from "~/appwrite/trips";
@@ -72,10 +73,7 @@ const Trips = ({}: Route.ComponentProps) => {
         <div className="trip-grid mb-4">
           {isLoading ?
             Array.from({ length: limit }).map((_, i) => (
-              <div
-                key={i}
-                className="rounded-xl border border-light-200 bg-white h-[260px] animate-pulse"
-              />
+              <TripCardSkeleton key={i} />
             ))
           : trips.map((trip) => (
               <TripCard

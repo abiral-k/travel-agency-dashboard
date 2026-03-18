@@ -1,4 +1,9 @@
 import { Header, StatsCard, TripCard } from "~/components";
+import {
+  StatsCardSkeleton,
+  TripCardSkeleton,
+  CardSkeleton,
+} from "~/components/ui/skeletons";
 import { getAllUsers } from "~/appwrite/auth";
 import type { Route } from "./+types/dashboard";
 import {
@@ -26,7 +31,9 @@ import type {
   UsersItineraryCount,
 } from "~/types";
 
-const DashboardCharts = React.lazy(() => import("./dashboard-charts"));
+const DashboardCharts = React.lazy(
+  () => import("~/components/DashboardCharts"),
+);
 
 export const shouldRevalidate: ShouldRevalidateFunction = () => false;
 
@@ -39,47 +46,6 @@ type DashboardClientData = {
 };
 
 const Dashboard = ({}: Route.ComponentProps) => {
-  const StatsCardSkeleton = ({ label }: { label: string }) => (
-    <div className="stats-card animate-pulse">
-      <div className="flex items-start justify-between gap-4">
-        <div className="space-y-2">
-          <p className="text-sm text-dark-400">{label}</p>
-          <div className="h-8 w-24 rounded-md bg-light-300" />
-        </div>
-        <div className="size-10 rounded-xl bg-light-300" />
-      </div>
-      <div className="content">
-        <div className="h-5 w-32 rounded-md bg-light-300" />
-        <div className="h-5 w-28 rounded-md bg-light-300" />
-      </div>
-    </div>
-  );
-
-  const TripCardSkeleton = () => (
-    <div className="trip-card animate-pulse overflow-hidden">
-      <div className="w-full h-[160px] bg-light-300 rounded-t-xl" />
-
-      <article>
-        <div className="h-5 w-3/4 rounded-md bg-light-300" />
-        <div className="flex items-center gap-2">
-          <div className="size-4 rounded bg-light-300" />
-          <div className="h-4 w-1/2 rounded bg-light-300" />
-        </div>
-      </article>
-
-      <div className="mt-5 pl-[18px] pr-3.5 pb-5">
-        <div className="flex gap-2">
-          <div className="h-7 w-20 rounded-full bg-light-300" />
-          <div className="h-7 w-20 rounded-full bg-light-300" />
-        </div>
-      </div>
-
-      <div className="tripCard-pill bg-light-300 text-transparent select-none">
-        ----
-      </div>
-    </div>
-  );
-
   const layoutUserDoc = useRouteLoaderData(
     "routes/admin/admin-layout",
   ) as unknown as {
@@ -90,8 +56,9 @@ const Dashboard = ({}: Route.ComponentProps) => {
     joinedAt?: string;
   } | null;
 
-  const user: User | null = layoutUserDoc
-    ? {
+  const user: User | null =
+    layoutUserDoc ?
+      {
         id: layoutUserDoc.$id ?? "",
         name: layoutUserDoc.name ?? "",
         email: layoutUserDoc.email ?? "",
@@ -138,19 +105,21 @@ const Dashboard = ({}: Route.ComponentProps) => {
           };
         });
 
-        const mappedUsers: UsersItineraryCount[] = allUsers.users.map((user) => {
-          const u = user as unknown as {
-            imageUrl?: string;
-            name?: string;
-            itineraryCount?: number;
-          };
+        const mappedUsers: UsersItineraryCount[] = allUsers.users.map(
+          (user) => {
+            const u = user as unknown as {
+              imageUrl?: string;
+              name?: string;
+              itineraryCount?: number;
+            };
 
-          return {
-            imageUrl: u.imageUrl ?? "",
-            name: u.name ?? "",
-            count: u.itineraryCount ?? Math.floor(Math.random() * 10),
-          };
-        });
+            return {
+              imageUrl: u.imageUrl ?? "",
+              name: u.name ?? "",
+              count: u.itineraryCount ?? Math.floor(Math.random() * 10),
+            };
+          },
+        );
 
         if (cancelled) return;
         setData({
@@ -217,7 +186,9 @@ const Dashboard = ({}: Route.ComponentProps) => {
               <StatsCard
                 headerTitle="Total Trips"
                 total={data.dashboardStats.totalTrips}
-                currentMonthCount={data.dashboardStats.tripsCreated.currentMonth}
+                currentMonthCount={
+                  data.dashboardStats.tripsCreated.currentMonth
+                }
                 lastMonthCount={data.dashboardStats.tripsCreated.lastMonth}
               />
               <StatsCard
@@ -261,8 +232,8 @@ const Dashboard = ({}: Route.ComponentProps) => {
       <Suspense
         fallback={
           <section className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            <div className="rounded-xl border border-light-200 bg-white h-[320px]" />
-            <div className="rounded-xl border border-light-200 bg-white h-[320px]" />
+            <CardSkeleton height="h-[320px]" />
+            <CardSkeleton height="h-[320px]" />
           </section>
         }
       >
@@ -272,8 +243,8 @@ const Dashboard = ({}: Route.ComponentProps) => {
             tripsByTravelStyle={data.tripsByTravelStyle}
           />
         : <section className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            <div className="rounded-xl border border-light-200 bg-white h-[320px] animate-pulse" />
-            <div className="rounded-xl border border-light-200 bg-white h-[320px] animate-pulse" />
+            <CardSkeleton height="h-[320px]" />
+            <CardSkeleton height="h-[320px]" />
           </section>
         }
       </Suspense>
@@ -315,8 +286,8 @@ const Dashboard = ({}: Route.ComponentProps) => {
             </div>
           ))
         : <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            <div className="rounded-xl border border-light-200 bg-white h-[360px] animate-pulse" />
-            <div className="rounded-xl border border-light-200 bg-white h-[360px] animate-pulse" />
+            <CardSkeleton height="h-[360px]" />
+            <CardSkeleton height="h-[360px]" />
           </div>
         }
       </section>
