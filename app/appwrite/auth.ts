@@ -7,7 +7,11 @@ export const getExistingUser = async (id: string) => {
     const { documents, total } = await database.listDocuments(
       appwriteConfig.databaseId,
       appwriteConfig.userCollectionId,
-      [Query.equal("accountId", id), Query.orderDesc("$createdAt"), Query.limit(1)],
+      [
+        Query.equal("accountId", id),
+        Query.orderDesc("$createdAt"),
+        Query.limit(1),
+      ],
     );
     return total > 0 ? documents[0] : null;
   } catch (error) {
@@ -59,7 +63,8 @@ export const syncUserData = async (
 
     const update: Record<string, unknown> = {};
 
-    if (user.email && existingUser.email !== user.email) update.email = user.email;
+    if (user.email && existingUser.email !== user.email)
+      update.email = user.email;
     if (user.name && existingUser.name !== user.name) update.name = user.name;
 
     // Only fetch/update image when missing to avoid extra network calls.
@@ -67,7 +72,9 @@ export const syncUserData = async (
       const { providerAccessToken } =
         (await account.getSession("current")) || {};
       const profilePicture =
-        providerAccessToken ? await getGooglePicture(providerAccessToken) : null;
+        providerAccessToken ?
+          await getGooglePicture(providerAccessToken)
+        : null;
       if (profilePicture) update.imageUrl = profilePicture;
     }
 
@@ -150,19 +157,30 @@ export const getUser = async () => {
   }
 };
 
-export const getAllUsers = async (limit: number, offset: number) => {
+export const getAllUsers = async (
+  limit: number,
+  offset: number,
+  search?: string,
+) => {
   try {
+    const queries = [Query.limit(limit), Query.offset(offset)];
+
+    if (search) {
+      // Query.search requires a full-text index on the field in Appwrite console
+      queries.push(Query.search("name", search));
+    }
+
     const { documents: users, total } = await database.listDocuments(
       appwriteConfig.databaseId,
       appwriteConfig.userCollectionId,
-      [Query.limit(limit), Query.offset(offset)],
+      queries,
     );
 
     if (total === 0) return { users: [], total };
 
     return { users, total };
   } catch (e) {
-    console.log("Error fetching users");
+    console.error("Error fetching users:", e);
     return { users: [], total: 0 };
   }
 };
